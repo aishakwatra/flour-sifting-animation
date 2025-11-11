@@ -26,9 +26,9 @@ const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
 
 // --- Particle System Constants ---
-const unsigned int NUM_PARTICLES_X = 15;
-const unsigned int NUM_PARTICLES_Y = 15;
-const unsigned int NUM_PARTICLES_Z = 15;
+const unsigned int NUM_PARTICLES_X = 100;
+const unsigned int NUM_PARTICLES_Y = 100;
+const unsigned int NUM_PARTICLES_Z = 100;
 const unsigned int TOTAL_PARTICLES = NUM_PARTICLES_X * NUM_PARTICLES_Y * NUM_PARTICLES_Z;
 
 // --- Global Variables ---
@@ -47,15 +47,15 @@ float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
 // --- NEW: Fixed Time Step ---
-const float PHYSICS_TIME_STEP = 0.005f; // Must match DELTA_T in particles.cs
+const float PHYSICS_TIME_STEP = 0.005f; 
 float physicsAccumulator = 0.0f;
 // ---
 
 // Movable Spawn Point
 glm::vec3 g_SpawnCenter(0.0f, 15.0f, 0.0f); // Initial spawn position
-const float SPAWN_RANGE_XZ = 2.0f;
-const float CEILING_Y_RANGE = 4.0f;
-const float FLOOR_Y = 0.0f;
+const float SPAWN_RANGE_XZ = 10.0f;
+const float CEILING_Y_RANGE = 6.0f;
+const float FLOOR_Y =-4.0f;
 
 // --- Lifetime Constants (must match shader) ---
 const float MIN_LIFETIME = 3.0;
