@@ -8,11 +8,12 @@
 #include "shader_m.h"
 #include "shader_c.h"
 #include "camera.h"
+#include "model.h"
+#include <stb_image.h>
 
 #include <iostream>
 #include <vector>
 #include <random>
-
 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
@@ -22,8 +23,8 @@ void processInput(GLFWwindow* window);
 
 
 // --- Settings ---
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1200;
+const unsigned int SCR_HEIGHT = 1200;
 
 // --- Particle System Constants ---
 const unsigned int NUM_PARTICLES_X = 100;
@@ -83,7 +84,6 @@ void setupParticleBuffers()
 			rand_y(generator),
 			g_SpawnCenter.z + rand_xz(generator),
 			1.0f);
-		// Use random lifetime in .w component
 		velocities[i] = glm::vec4(0.0f, rand_vel(generator), 0.0f, rand_life(generator));
 	}
 
@@ -154,6 +154,8 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	stbi_set_flip_vertically_on_load(false);
+
 	glEnable(GL_DEPTH_TEST);
 
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black background
@@ -166,6 +168,9 @@ int main(int argc, char* argv[])
 
 	Shader particleRenderShader("particle_render.vs", "particle_render.fs");
 	ComputeShader computeShader("particles.cs");
+	Shader modelShader("model_loading.vs", "model_loading.fs");
+
+	Model ourModel("Objects/table/table.obj");
 
 	setupParticleBuffers();
 
@@ -190,41 +195,43 @@ int main(int argc, char* argv[])
 		processInput(window);
 
 
-		// #########################################
-		// ### THE FIX IS HERE ###
-		// #########################################
-
-		// 1. Add real-world time to the accumulator
 		physicsAccumulator += deltaTime;
 
-		// 2. Run the physics simulation in fixed steps
-		// This loop will run 0 times if the frame is too fast,
-		// or multiple times if the frame is very slow.
 		while (physicsAccumulator >= PHYSICS_TIME_STEP)
 		{
-			// --- Run ONE step of the simulation ---
+			
 			computeShader.use();
 			computeShader.setVec3("spawnCenter", g_SpawnCenter);
 			computeShader.setFloat("spawnRangeXZ", SPAWN_RANGE_XZ);
 			computeShader.setFloat("spawnRangeY", CEILING_Y_RANGE);
 
 			glDispatchCompute(TOTAL_PARTICLES, 1, 1);
-
-			// We need the barrier *inside* the loop to ensure
-			// each physics step finishes before the next one starts.
 			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
 
-			// Subtract the time step we just simulated
 			physicsAccumulator -= PHYSICS_TIME_STEP;
 		}
 
 
-		// 3. Render Particles (always happens once per frame)
+		// Render Particles (always happens once per frame)
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Setup Camera/Projection/View matrices
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 200.0f);
 		glm::mat4 view = camera.GetViewMatrix();
+
+		modelShader.use();
+		modelShader.setMat4("projection", projection);
+		modelShader.setMat4("view", view);
+
+		// Create a model matrix for the model
+		glm::mat4 model = glm::mat4(1.0f);
+		// Position it just below the FLOOR_Y
+		model = glm::translate(model, glm::vec3(0.0f, FLOOR_Y - 2.5f, 0.0f));
+		model = glm::scale(model, glm::vec3(1.0f)); // Scale it as needed
+		modelShader.setMat4("model", model);
+
+		// This is the draw call from your example!
+		ourModel.Draw(modelShader);
 
 		particleRenderShader.use();
 		particleRenderShader.setMat4("projection", projection);
@@ -257,6 +264,7 @@ int main(int argc, char* argv[])
 	glDeleteVertexArrays(1, &particleVAO);
 	glDeleteProgram(particleRenderShader.ID);
 	glDeleteProgram(computeShader.ID);
+	glDeleteProgram(modelShader.ID);
 
 
 	glfwTerminate();
@@ -271,20 +279,22 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
 		glfwSetWindowShouldClose(window, true);
 
+	float cameraSpeed = 10.0f * deltaTime;
+
 	// Pass deltaTime to camera processor
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-		camera.ProcessKeyboard(FORWARD, deltaTime);
+		camera.ProcessKeyboard(FORWARD, cameraSpeed);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-		camera.ProcessKeyboard(BACKWARD, deltaTime);
+		camera.ProcessKeyboard(BACKWARD, cameraSpeed);
 	if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-		camera.ProcessKeyboard(LEFT, deltaTime);
+		camera.ProcessKeyboard(LEFT, cameraSpeed);
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-		camera.ProcessKeyboard(RIGHT, deltaTime);
+		camera.ProcessKeyboard(RIGHT, cameraSpeed);
 
 	// --- Spawn Point Movement (Arrow Keys) ---
 	float spawnMoveSpeed = 10.0f * deltaTime; // Speed of the spawn point
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		g_SpawnCenter.z -= spawnMoveSpeed; 1; // Move "forward" in the world
+		g_SpawnCenter.z -= spawnMoveSpeed; // Move "forward" in the world
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
 		g_SpawnCenter.z += spawnMoveSpeed; // Move "backward"
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)

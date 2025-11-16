@@ -6,7 +6,7 @@ layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 const vec3 GRAVITY = vec3(0.0, -9.8, 0.0);
 const float PARTICLE_INV_MASS = 1.0 / 0.1;
 const float DELTA_T = 0.005;
-const float FLOOR_Y = 0.0;
+const float FLOOR_Y = -2.3;
 const float DAMPING_Y = 0.6;   // Coefficient of restitution (how much Y-energy is kept on bounce)
 const float DAMPING_XZ = 0.98; // Friction on the floor
 
@@ -16,8 +16,8 @@ uniform float spawnRangeXZ;
 uniform float spawnRangeY;
 
 // --- Lifetime Constants ---
-const float MIN_LIFETIME = 3.0; // Particle will live at least 3 seconds
-const float MAX_LIFETIME = 5.0; // Particle will live at most 5 seconds
+const float MIN_LIFETIME = 3.0;
+const float MAX_LIFETIME = 5.0;
 
 // --- Buffers ---
 layout(std430, binding = 0) buffer Pos
@@ -25,16 +25,13 @@ layout(std430, binding = 0) buffer Pos
     vec4 Position [];
 };
 
-// #########################################
-// ### THE FIX IS HERE ###
-// #########################################
-layout(std430, binding = 1) buffer Vel // Was std440
+
+layout(std430, binding = 1) buffer Vel
 {
-    // .xyz = velocity, .w = lifetime
+
     vec4 Velocity [];
 };
 
-// Simple hash function to generate a pseudo-random float [0, 1]
 float rand(float n)
 {
     return fract(sin(n) * 43758.5453123);
