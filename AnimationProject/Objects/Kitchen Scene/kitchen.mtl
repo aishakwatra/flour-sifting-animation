@@ -1,0 +1,68 @@
+# Blender 4.5.3 LTS MTL File: 'kitchen.blend'
+# www.blender.org
+
+newmtl appliance_mat
+Ka 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd appliance_CoBake.jpg
+map_Ns appliance_Ro.jpg
+map_refl appliance_Me.jpg
+
+newmtl glass_mat
+Ns 360.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl things_02_mat
+Ka 1.000000 1.000000 1.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd things_Co.jpg
+map_Ks things_Sp.jpg
+map_Ns things_Ro.jpg
+map_refl things_Me.jpg
+map_Ke things_Co.jpg
+
+newmtl things_mat
+Ka 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd things_CoBakeDenoise.jpg
+
+newmtl transparencies_mat
+Ns 360.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.800000 0.800000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+
+newmtl wallFloor_mat
+Ka 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd wallFloor_CoBakeDenoise.jpg
+
+newmtl woodenFurniture_mat
+Ka 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 1
+map_Kd woodenFurniture_CoBakeDenoise.jpg

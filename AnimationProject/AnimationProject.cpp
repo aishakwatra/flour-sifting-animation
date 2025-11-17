@@ -10,6 +10,7 @@
 #include "camera.h"
 #include "model.h"
 #include <stb_image.h>
+#include "Skybox.h"
 
 #include <iostream>
 #include <vector>
@@ -127,7 +128,7 @@ int main(int argc, char* argv[])
 
 	// glfw window creation
 	// --------------------
-	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Animation - Particle System", NULL, NULL);
+	GLFWwindow* window = glfwCreateWindow(SCR_WIDTH, SCR_HEIGHT, "Flour Sifting Animation", NULL, NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -157,7 +158,7 @@ int main(int argc, char* argv[])
 	stbi_set_flip_vertically_on_load(false);
 
 	glEnable(GL_DEPTH_TEST);
-
+	glDepthFunc(GL_LEQUAL);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black background
 
 	// (Query limitations omitted...)
@@ -169,6 +170,17 @@ int main(int argc, char* argv[])
 	Shader particleRenderShader("particle_render.vs", "particle_render.fs");
 	ComputeShader computeShader("particles.cs");
 	Shader modelShader("model_loading.vs", "model_loading.fs");
+	Shader skyboxShader("skybox.vs", "skybox.fs");
+	std::vector<std::string> faces = {
+	"Textures/skybox/sunset/px.jpg",
+	"Textures/skybox/sunset/nx.jpg",
+	"Textures/skybox/sunset/py.jpg",
+	"Textures/skybox/sunset/ny.jpg",
+	"Textures/skybox/sunset/pz.jpg",
+	"Textures/skybox/sunset/nz.jpg"
+	};
+
+	Skybox skybox(faces, skyboxShader.getID());
 
 	Model ourModel("Objects/table/table.obj");
 
@@ -232,10 +244,13 @@ int main(int argc, char* argv[])
 
 		// This is the draw call from your example!
 		ourModel.Draw(modelShader);
+		skybox.draw(view, projection);
 
 		particleRenderShader.use();
 		particleRenderShader.setMat4("projection", projection);
 		particleRenderShader.setMat4("view", view);
+
+		
 
 		// Enable settings for particle visual effect
 		glEnable(GL_BLEND);

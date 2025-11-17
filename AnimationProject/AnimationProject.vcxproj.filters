@@ -18,6 +18,9 @@
     <ClCompile Include="AnimationProject.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Skybox.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h">
@@ -35,6 +38,9 @@
     <ClInclude Include="shader_c.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="Skybox.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="model_loading.fs">
@@ -50,6 +56,12 @@
       <Filter>Source Files</Filter>
     </None>
     <None Include="particle_render.fs">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="skybox.fs">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="skybox.vs">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>
