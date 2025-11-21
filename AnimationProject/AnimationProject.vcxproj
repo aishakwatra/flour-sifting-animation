@@ -142,6 +142,9 @@
     <ClInclude Include="Skybox.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="flour.fs" />
+    <None Include="flour.vs" />
+    <None Include="flour_relax.cs" />
     <None Include="model_loading.fs" />
     <None Include="model_loading.vs" />
     <None Include="particles.cs" />

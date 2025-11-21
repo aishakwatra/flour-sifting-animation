@@ -64,5 +64,14 @@
     <None Include="skybox.vs">
       <Filter>Source Files</Filter>
     </None>
+    <None Include="flour.vs">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="flour.fs">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="flour_relax.cs">
+      <Filter>Source Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
