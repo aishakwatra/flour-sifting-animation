@@ -16,6 +16,7 @@
 #include <vector>
 #include <random>
 
+#include <cfloat> // for FLT_MAX
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
@@ -24,13 +25,13 @@ void processInput(GLFWwindow* window);
 
 
 // --- Settings ---
-const unsigned int SCR_WIDTH = 1200;
-const unsigned int SCR_HEIGHT = 1200;
+const unsigned int SCR_WIDTH = 1800;
+const unsigned int SCR_HEIGHT = 1300;
 
 // --- Particle System Constants ---
-const unsigned int NUM_PARTICLES_X = 50;
-const unsigned int NUM_PARTICLES_Y = 50;
-const unsigned int NUM_PARTICLES_Z = 50;
+const unsigned int NUM_PARTICLES_X = 30;
+const unsigned int NUM_PARTICLES_Y = 30;
+const unsigned int NUM_PARTICLES_Z = 30;
 const unsigned int TOTAL_PARTICLES = NUM_PARTICLES_X * NUM_PARTICLES_Y * NUM_PARTICLES_Z;
 
 // --- Global Variables ---
@@ -55,18 +56,15 @@ const float PHYSICS_TIME_STEP = 0.005f;
 float physicsAccumulator = 0.0f;
 // ---
 
-// Movable Spawn Point
-glm::vec3 g_SpawnCenter(0.0f, 15.0f, 0.0f); // Initial spawn position
-const float SPAWN_RANGE_XZ = 5.0f;
-const float SPAWN_Y = 4.0f;
+//Spawn Point
+glm::vec3 g_SpawnCenter(0.0f, 14.5f, 0.0f);
+const float SPAWN_RANGE_XZ = 2.0f;
 const float FLOOR_Y =-4.0f; 
-// --- Lifetime Constants (must match shader) ---
-const float MIN_LIFETIME = 3.0;
-const float MAX_LIFETIME = 5.0;
+
 
 //HEIGHTMAP CONSTRAINTS
-const int HM_WIDTH = 512;
-const int HM_HEIGHT = 512;
+const int HM_WIDTH = 700;
+const int HM_HEIGHT = 700;
 
 // We'll treat this as the base plane for flour/table
 const float TABLE_Y = -2.3f;
@@ -88,7 +86,30 @@ unsigned int flourIndexCount = 0;
 const int FLOUR_GRID_W = HM_WIDTH;
 const int FLOUR_GRID_H = HM_HEIGHT;
 
-const float flourUnitHeight = 0.0015f;
+const float flourUnitHeight = 0.00005f;
+
+//SIFT CONSTANTS
+glm::vec3 g_SifterCenter(0.0f, FLOOR_Y + 15.0f, 0.0f);
+const float SIFTER_SCALE = 2.0f;
+
+//side-to-side animation parameters
+const float SIFTER_AMPLITUDE = 3.0f;   // how far left/right it moves
+const float SIFTER_SPEED = 15.0f;   // oscillation speed
+
+const float SIFTER_JITTER_AMPLITUDE = 0.5f; // how much it wiggles sideways
+
+glm::vec2 g_SifterDirXZ(1.0f, 0.5f);   
+glm::vec2 g_SifterDirPerpXZ;
+
+struct SifterBounds
+{
+	glm::vec3 centerModel;  // center of bounding box in model space
+	float     radiusXZ;     // radius in XZ (for the circular bound)
+	float     minY;         // vertical extents if you ever need them
+	float     maxY;
+};
+
+SifterBounds g_SifterBoundsModel;
 
 
 void setupFlourHeightmap()
@@ -117,6 +138,47 @@ void setupFlourHeightmap()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
+}
+
+SifterBounds ComputeSifterBounds(const Model& model)
+{
+	SifterBounds result{};
+
+	glm::vec3 minB(FLT_MAX);
+	glm::vec3 maxB(-FLT_MAX);
+
+	for (const Mesh& mesh : model.meshes)
+	{
+		for (const auto& v : mesh.vertices)
+		{
+			const glm::vec3& p = v.Position;
+			minB = glm::min(minB, p);
+			maxB = glm::max(maxB, p);
+		}
+	}
+
+	glm::vec3 center = 0.5f * (minB + maxB);
+
+	// 2) Radius in XZ from this center (tightest circle including side walls)
+	float radiusXZ = 0.0f;
+	for (const Mesh& mesh : model.meshes)
+	{
+		for (const auto& v : mesh.vertices)
+		{
+			glm::vec3 p = v.Position;
+			glm::vec2 d = glm::vec2(p.x - center.x, p.z - center.z);
+			float r = glm::length(d);
+			if (r > radiusXZ)
+				radiusXZ = r;
+		}
+	}
+
+	result.centerModel = center;
+	result.radiusXZ = radiusXZ;
+	result.minY = minB.y;
+	result.maxY = maxB.y;
+
+	return result;
 }
 
 
@@ -217,22 +279,28 @@ void setupFlourMesh()
 void setupParticleBuffers()
 {
 	std::default_random_engine generator;
-
-	// Spawning constants 
-	std::uniform_real_distribution<float> rand_xz(-SPAWN_RANGE_XZ, SPAWN_RANGE_XZ);
 	std::uniform_real_distribution<float> rand_vel(-8.0f, 0.0f);
-	std::uniform_real_distribution<float> rand_life(MIN_LIFETIME, MAX_LIFETIME);
 
+	std::uniform_real_distribution<float> rand01(0.0f, 1.0f);
 
 	std::vector<glm::vec4> positions(TOTAL_PARTICLES);
 	std::vector<glm::vec4> velocities(TOTAL_PARTICLES);
 
-	for (int i = 0; i < TOTAL_PARTICLES; ++i)
+	for (unsigned int i = 0; i < TOTAL_PARTICLES; i++)
 	{
+		float u = rand01(generator);
+		float v = rand01(generator);
+
+		float radius = std::sqrt(u) * SPAWN_RANGE_XZ;
+		float angle = 2.0f * 3.14159265f * v;
+
+		float dx = std::cos(angle) * radius;
+		float dz = std::sin(angle) * radius;
+
 		positions[i] = glm::vec4(
-			g_SpawnCenter.x + rand_xz(generator),  
-			SPAWN_Y,                              
-			g_SpawnCenter.z + rand_xz(generator),  
+			g_SpawnCenter.x + dx,
+			g_SpawnCenter.y,
+			g_SpawnCenter.z + dz,
 			1.0f
 		);
 
@@ -240,7 +308,7 @@ void setupParticleBuffers()
 			0.0f,
 			rand_vel(generator),  
 			0.0f,
-			rand_life(generator)
+			0.0f
 		);
 	}
 
@@ -317,6 +385,8 @@ int main(int argc, char* argv[])
 	glDepthFunc(GL_LEQUAL);
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black background
 
+
+
 	// (Query limitations omitted...)
 	std::cout << "OpenGL Limitations: " << "..." << std::endl;
 
@@ -340,6 +410,12 @@ int main(int argc, char* argv[])
 	Skybox skybox(faces, skyboxShader.getID());
 
 	Model tableModel("Objects/table/table.obj");
+	Model sieveModel("Objects/sieve/sieve.obj");
+
+	g_SifterBoundsModel = ComputeSifterBounds(sieveModel);
+
+	g_SifterDirXZ = glm::normalize(g_SifterDirXZ);
+	g_SifterDirPerpXZ = glm::vec2(-g_SifterDirXZ.y, g_SifterDirXZ.x);
 
 	setupParticleBuffers();
 	setupFlourHeightmap();
@@ -354,6 +430,7 @@ int main(int argc, char* argv[])
 		float currentFrame = (float)glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+
 		if (fCounter > 500) {
 			std::cout << "FPS: " << 1 / deltaTime << std::endl;
 			fCounter = 0;
@@ -363,6 +440,32 @@ int main(int argc, char* argv[])
 		}
 
 		processInput(window);
+
+
+		// --- Sifter motion (shake in XZ) ---
+		float tMain = std::sin(currentFrame * SIFTER_SPEED + 1.0f); // [-1, 1]
+		glm::vec2 offsetMain = g_SifterDirXZ * (SIFTER_AMPLITUDE * tMain);
+
+		// small perpendicular wobble to avoid a perfect straight line
+		float tJitter = std::sin(currentFrame * SIFTER_SPEED * 1.7f + 1.0f); // different phase/freq
+		glm::vec2 offsetJitter = g_SifterDirPerpXZ * (SIFTER_JITTER_AMPLITUDE * tJitter);
+
+		// total horizontal offset from center
+		glm::vec2 offsetXZ = offsetMain + offsetJitter;
+
+		// apply to sifter center (Y stays fixed)
+		g_SifterCenter.x = offsetXZ.x;
+		g_SifterCenter.z = offsetXZ.y;
+
+		// --- Make emitter follow the *bottom* of the sieve ---
+		// Same bottom we use for sifter collisions
+		glm::vec3 sifterCenterWorld = g_SifterCenter + g_SifterBoundsModel.centerModel * SIFTER_SCALE;
+		float sifterBottomY = g_SifterCenter.y + g_SifterBoundsModel.minY * SIFTER_SCALE;
+
+		// Put spawn disk just above the grid plane so flour appears to emerge from the mesh
+		g_SpawnCenter.x = sifterCenterWorld.x;
+		g_SpawnCenter.z = sifterCenterWorld.z;
+		g_SpawnCenter.y = sifterBottomY + 0.1f;  
 
 
 		physicsAccumulator += deltaTime;
@@ -395,6 +498,22 @@ int main(int argc, char* argv[])
 				GL_R32UI              // must match internal format
 			);
 
+
+			glm::vec3 sifterCenterWorld = g_SifterCenter + g_SifterBoundsModel.centerModel * SIFTER_SCALE;
+
+			// radius in XZ from bounds
+			float sifterRadiusWorld = g_SifterBoundsModel.radiusXZ * SIFTER_SCALE;
+
+			// bottom of the sieve (minY) in world space
+			float sifterBottomY = g_SifterCenter.y + g_SifterBoundsModel.minY * SIFTER_SCALE;
+
+			computeShader.setVec3("sifterCenter", sifterCenterWorld);
+			computeShader.setFloat("sifterRadius", sifterRadiusWorld);
+			computeShader.setFloat("sifterY", sifterBottomY);
+
+			computeShader.setFloat("sifterCellSize", 0.12f);      // spacing
+			computeShader.setFloat("sifterBarThickness", 0.1f); // thickness
+
 			glDispatchCompute(TOTAL_PARTICLES, 1, 1);
 			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
@@ -414,19 +533,32 @@ int main(int argc, char* argv[])
 		modelShader.setMat4("view", view);
 
 
+		//DRAW TABLE
 		glm::mat4 model = glm::mat4(1.0f);
 		model = glm::translate(model, glm::vec3(0.0f, FLOOR_Y - 2.5f, 0.0f));
 		model = glm::scale(model, glm::vec3(1.0f));
 		modelShader.setMat4("model", model);
 
 		tableModel.Draw(modelShader);
+
+
+		//DRAW SIEVE
+		glm::mat4 modelSieve = glm::mat4(1.0f);
+		modelSieve = glm::translate(modelSieve, g_SifterCenter);
+		modelSieve = glm::scale(modelSieve, glm::vec3(SIFTER_SCALE));
+		modelShader.setMat4("model", modelSieve);
+		sieveModel.Draw(modelShader);
+
+		//DRAW SKYBOX
 		skybox.draw(view, projection);
+
+
+		//DRAW FLOUR HEIGHTMAP
 
 		flourShader.use();
 		flourShader.setMat4("projection", projection);
 		flourShader.setMat4("view", view);
 
-		// Flour is already in world space, so model is identity
 		glm::mat4 flourModelMat = glm::mat4(1.0f);
 		flourShader.setMat4("model", flourModelMat);
 
@@ -439,11 +571,8 @@ int main(int argc, char* argv[])
 		flourShader.setVec3("lightColor", glm::vec3(1.0f));
 		flourShader.setVec3("flourColor", glm::vec3(0.98f, 0.98f, 0.95f));
 
-		// Bind heightmap as texture unit 0
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, flourHeightTex);
-		// If your Shader class doesn't automatically set samplers to binding=0,
-		// do this once somewhere:
 
 		flourShader.use();
 		flourShader.setInt("flourHeightmap", 0);
@@ -456,7 +585,6 @@ int main(int argc, char* argv[])
 		particleRenderShader.use();
 		particleRenderShader.setMat4("projection", projection);
 		particleRenderShader.setMat4("view", view);
-	
 
 		glEnable(GL_BLEND);
 		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
