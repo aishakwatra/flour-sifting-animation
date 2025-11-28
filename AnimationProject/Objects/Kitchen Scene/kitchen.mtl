@@ -1,68 +1,241 @@
-# Blender 4.5.3 LTS MTL File: 'kitchen.blend'
+# Blender 4.5.3 LTS MTL File: 'Untitled.blend'
 # www.blender.org
 
-newmtl appliance_mat
+newmtl CoverPaglia1
+Ns 10.000005
 Ka 1.000000 1.000000 1.000000
-Ks 0.500000 0.500000 0.500000
 Ke 0.000000 0.000000 0.000000
-Ni 1.450000
+Ni 1.500000
 d 1.000000
 illum 2
-map_Kd appliance_CoBake.jpg
-map_Ns appliance_Ro.jpg
-map_refl appliance_Me.jpg
+map_Kd Paglia_ColorMap.jpg
+map_Ks Paglia_GrayMap.jpg
+map_Bump Map__86_Normal_Bump.tga
 
-newmtl glass_mat
-Ns 360.000000
+newmtl Etiquette_nutella
+Ns 10.000005
 Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
-Ks 0.500000 0.500000 0.500000
+Kd 0.588235 0.588235 0.588235
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+
+newmtl GLASS
+Ns 49.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.564706 0.564706 0.564706
+Ks 0.820000 0.820000 0.820000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 0.150000
+illum 9
+
+newmtl GamlaGialla_A01
+Ns 10.000005
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd GamlaGialla-A01CompleteMap.jpg
+
+newmtl Gamla_Rosa_Liscia_D1
+Ns 10.000005
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 1
+map_Kd Gamla-Rosa-Liscia-D1CompleteMap.jpg
+
+newmtl Glass_Azzurro_01
+Ns 70.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.019608 0.019608 0.019608
+Ks 0.840523 0.840523 0.840523
 Ke 0.000000 0.000000 0.000000
 Ni 1.000000
+d 0.500000
+illum 9
+map_refl SKY.jpg
+
+newmtl Internonero
+Ns 51.000004
+Ka 1.000000 1.000000 1.000000
+Ks 1.143000 1.143000 1.143000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Small-Padella_Low1_albedo.jpg
+map_Bump Map__9701_Normal_Bump.tga
+
+newmtl K0_End01
+Ns 52.999996
+Ka 1.000000 1.000000 1.000000
+Ks 0.148039 0.148039 0.148039
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd K1CompleteMap.jpg
+map_Bump Map__9677_Normal_Bump.tga
+
+newmtl Metal1
+Ns 47.000004
+Ka 1.000000 1.000000 1.000000
+Ks 0.837000 0.837000 0.837000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Metal1DiffuseMap.jpg
+
+newmtl Metal_Chrome
+Ns 19.999990
+Ka 1.000000 1.000000 1.000000
+Kd 0.439216 0.439216 0.439216
+Ks 1.350000 1.350000 1.350000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_refl Lakerem.jpg
+
+newmtl Nero
+Ns 52.999996
+Ka 1.000000 1.000000 1.000000
+Kd 0.066667 0.066667 0.066667
+Ks 0.576000 0.576000 0.576000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
 d 1.000000
 illum 2
 
-newmtl things_02_mat
+newmtl Pate_nutella
+Ns 61.999996
 Ka 1.000000 1.000000 1.000000
-Ni 1.450000
+Kd 0.223529 0.152941 0.031373
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
 d 1.000000
 illum 1
-map_Kd things_Co.jpg
-map_Ks things_Sp.jpg
-map_Ns things_Ro.jpg
-map_refl things_Me.jpg
-map_Ke things_Co.jpg
 
-newmtl things_mat
+newmtl Pavimento01
+Ns 48.000004
 Ka 1.000000 1.000000 1.000000
+Ks 0.369000 0.369000 0.369000
 Ke 0.000000 0.000000 0.000000
-Ni 1.450000
+Ni 1.500000
 d 1.000000
-illum 1
-map_Kd things_CoBakeDenoise.jpg
+illum 2
+map_Kd Cotto-Color.jpg
+map_Bump Map__9689_Normal_Bump.tga
 
-newmtl transparencies_mat
-Ns 360.000000
+newmtl Piastrelle001
+Ns 29.999998
 Ka 1.000000 1.000000 1.000000
-Kd 0.800000 0.800000 0.800000
-Ks 0.500000 0.500000 0.500000
+Ks 0.801000 0.801000 0.801000
 Ke 0.000000 0.000000 0.000000
-Ni 1.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Piastrelle001CompleteMap.jpeg
+
+newmtl Piatto01
+Ns 34.000004
+Ka 1.000000 1.000000 1.000000
+Ks 0.450000 0.450000 0.450000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Piatto_B1.jpg
+
+newmtl Scuro01
+Ns 32.000008
+Ka 1.000000 1.000000 1.000000
+Kd 0.000000 0.000000 0.000000
+Ks 1.143000 1.143000 1.143000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
 d 1.000000
 illum 2
 
-newmtl wallFloor_mat
+newmtl Soffitto01
+Ns 10.000005
 Ka 1.000000 1.000000 1.000000
+Kd 0.882353 0.882353 0.882353
+Ks 0.261000 0.261000 0.261000
 Ke 0.000000 0.000000 0.000000
-Ni 1.450000
+Ni 1.500000
 d 1.000000
 illum 2
-map_Kd wallFloor_CoBakeDenoise.jpg
 
-newmtl woodenFurniture_mat
+newmtl Standardmaterial
+Ns 10.000005
 Ka 1.000000 1.000000 1.000000
+Kd 0.352941 0.352941 0.352941
+Ks 0.000000 0.000000 0.000000
 Ke 0.000000 0.000000 0.000000
-Ni 1.450000
+Ni 1.500000
 d 1.000000
 illum 1
-map_Kd woodenFurniture_CoBakeDenoise.jpg
+
+newmtl Tappo
+Ns 0.000000
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.270000 0.270000 0.270000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Bump bord.jpg
+
+newmtl Vetri01
+Ns 53.999981
+Ka 1.000000 1.000000 1.000000
+Kd 0.658824 0.803922 0.690196
+Ks 1.179000 1.179000 1.179000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 0.050000
+illum 9
+
+newmtl Walls01
+Ns 50.000011
+Ka 1.000000 1.000000 1.000000
+Ks 0.243000 0.243000 0.243000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Loc-Wall-Bump-Beige-A.jpg
+map_Bump -bm 0.300000 Map__9682_Normal_Bump.tga
+
+newmtl WoodSedia1
+Ns 10.000005
+Ka 1.000000 1.000000 1.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+d 1.000000
+illum 2
+map_Kd Sedia_A1-[Color].jpg
+map_Ks Sedia_A1-[Gray-A].jpg
+map_Bump Map__90_Normal_Bump.tga
+
+newmtl wooden_desk
+Ns 10.000005
+Ka 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.500000
+illum 1
+map_Kd wooden-deskCompleteMap.jpg
+map_d wooden-deskAlphaMap.jpg

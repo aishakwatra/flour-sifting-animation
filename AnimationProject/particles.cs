@@ -105,8 +105,8 @@ bool handleSifterBottomCollision(vec3 p, inout vec3 p_new, inout vec3 v_new)
 
         if (vn < 0.0)
         {
-            float restitution = 0.2; // bounciness
-            float friction = 0.3; // damp sideways a bit
+            float restitution = 0.4; // bounciness
+            float friction = 0.4; // damp sideways a bit
 
             vec3 v_reflected =
                 -restitution * vn * n +    // bounce upward
@@ -125,7 +125,7 @@ bool handleSifterBottomCollision(vec3 p, inout vec3 p_new, inout vec3 v_new)
     return false;
 }
 
-const float SIFTER_WALL_HEIGHT = 2.0; 
+const float SIFTER_WALL_HEIGHT = 4.0; 
 
 bool handleSifterSideCollision(vec3 p, inout vec3 p_new, inout vec3 v_new)
 {

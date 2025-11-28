@@ -29,9 +29,9 @@ const unsigned int SCR_WIDTH = 1800;
 const unsigned int SCR_HEIGHT = 1300;
 
 // --- Particle System Constants ---
-const unsigned int NUM_PARTICLES_X = 30;
-const unsigned int NUM_PARTICLES_Y = 30;
-const unsigned int NUM_PARTICLES_Z = 30;
+const unsigned int NUM_PARTICLES_X = 40;
+const unsigned int NUM_PARTICLES_Y = 40;
+const unsigned int NUM_PARTICLES_Z = 40;
 const unsigned int TOTAL_PARTICLES = NUM_PARTICLES_X * NUM_PARTICLES_Y * NUM_PARTICLES_Z;
 
 // --- Global Variables ---
@@ -42,7 +42,7 @@ unsigned int particleVAO = 0;
 unsigned int flourHeightTex = 0;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 5.0f, -40.0f), glm::vec3(0.0f, 1.0f, 0.0f), 90.0f, 0.0f);
+Camera camera(glm::vec3(0.0f, 5.0f, 50.0f), glm::vec3(0.0f, 1.0f, 0.0f), 90.0f, 0.0f);
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -58,7 +58,7 @@ float physicsAccumulator = 0.0f;
 
 //Spawn Point
 glm::vec3 g_SpawnCenter(0.0f, 14.5f, 0.0f);
-const float SPAWN_RANGE_XZ = 2.0f;
+const float SPAWN_RANGE_XZ = 5.0f;
 const float FLOOR_Y =-4.0f; 
 
 
@@ -66,7 +66,7 @@ const float FLOOR_Y =-4.0f;
 const int HM_WIDTH = 700;
 const int HM_HEIGHT = 700;
 
-// We'll treat this as the base plane for flour/table
+// base plane for flour/table
 const float TABLE_Y = -2.3f;
 
 const float TABLE_SIZE_X = 30.0f; // covers [-15, 15] in X
@@ -90,7 +90,9 @@ const float flourUnitHeight = 0.00005f;
 
 //SIFT CONSTANTS
 glm::vec3 g_SifterCenter(0.0f, FLOOR_Y + 15.0f, 0.0f);
-const float SIFTER_SCALE = 2.0f;
+const float SIFTER_SCALE = 4.0f;
+
+glm::vec3 kitchenCenter(0.0f, -40.0f, -20.0f);
 
 //side-to-side animation parameters
 const float SIFTER_AMPLITUDE = 3.0f;   // how far left/right it moves
@@ -399,18 +401,19 @@ int main(int argc, char* argv[])
 	Shader flourShader("flour.vs", "flour.fs");
 	Shader skyboxShader("skybox.vs", "skybox.fs");
 	std::vector<std::string> faces = {
-	"Textures/skybox/sunset/px.jpg",
-	"Textures/skybox/sunset/nx.jpg",
-	"Textures/skybox/sunset/py.jpg",
-	"Textures/skybox/sunset/ny.jpg",
-	"Textures/skybox/sunset/pz.jpg",
-	"Textures/skybox/sunset/nz.jpg"
+		"Textures/skybox/sunset/px.jpg",
+		"Textures/skybox/sunset/nx.jpg",
+		"Textures/skybox/sunset/py.jpg",
+		"Textures/skybox/sunset/ny.jpg",
+		"Textures/skybox/sunset/pz.jpg",
+		"Textures/skybox/sunset/nz.jpg"
 	};
 
 	Skybox skybox(faces, skyboxShader.getID());
 
 	Model tableModel("Objects/table/table.obj");
 	Model sieveModel("Objects/sieve/sieve.obj");
+	Model KitchenScene("Objects/Kitchen Scene/kitchen.obj");
 
 	g_SifterBoundsModel = ComputeSifterBounds(sieveModel);
 
@@ -457,15 +460,15 @@ int main(int argc, char* argv[])
 		g_SifterCenter.x = offsetXZ.x;
 		g_SifterCenter.z = offsetXZ.y;
 
-		// --- Make emitter follow the *bottom* of the sieve ---
-		// Same bottom we use for sifter collisions
+		//// --- Make emitter follow the *bottom* of the sieve ---
+		//// Same bottom we use for sifter collisions
 		glm::vec3 sifterCenterWorld = g_SifterCenter + g_SifterBoundsModel.centerModel * SIFTER_SCALE;
 		float sifterBottomY = g_SifterCenter.y + g_SifterBoundsModel.minY * SIFTER_SCALE;
 
 		// Put spawn disk just above the grid plane so flour appears to emerge from the mesh
 		g_SpawnCenter.x = sifterCenterWorld.x;
 		g_SpawnCenter.z = sifterCenterWorld.z;
-		g_SpawnCenter.y = sifterBottomY + 0.1f;  
+		g_SpawnCenter.y = sifterBottomY + 3.0f;  
 
 
 		physicsAccumulator += deltaTime;
@@ -538,8 +541,14 @@ int main(int argc, char* argv[])
 		model = glm::translate(model, glm::vec3(0.0f, FLOOR_Y - 2.5f, 0.0f));
 		model = glm::scale(model, glm::vec3(1.0f));
 		modelShader.setMat4("model", model);
-
 		tableModel.Draw(modelShader);
+
+		//DRAW KITCHEN
+		glm::mat4 modelKitchen = glm::mat4(1.0f);
+		modelKitchen = glm::translate(modelKitchen, kitchenCenter);
+		modelKitchen = glm::scale(modelKitchen, glm::vec3(4));
+		modelShader.setMat4("model", modelKitchen);
+		KitchenScene.Draw(modelShader);
 
 
 		//DRAW SIEVE
@@ -554,7 +563,6 @@ int main(int argc, char* argv[])
 
 
 		//DRAW FLOUR HEIGHTMAP
-
 		flourShader.use();
 		flourShader.setMat4("projection", projection);
 		flourShader.setMat4("view", view);
