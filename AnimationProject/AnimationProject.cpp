@@ -10,13 +10,12 @@
 #include "camera.h"
 #include "model.h"
 #include <stb_image.h>
-#include "Skybox.h"
 
 #include <iostream>
 #include <vector>
 #include <random>
 
-#include <cfloat> // for FLT_MAX
+#include <cfloat> 
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn);
@@ -24,17 +23,16 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow* window);
 
 
-// --- Settings ---
-const unsigned int SCR_WIDTH = 1800;
-const unsigned int SCR_HEIGHT = 1300;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
-// --- Particle System Constants ---
-const unsigned int NUM_PARTICLES_X = 40;
-const unsigned int NUM_PARTICLES_Y = 40;
-const unsigned int NUM_PARTICLES_Z = 40;
+// Particle System Constants
+const unsigned int NUM_PARTICLES_X = 60;
+const unsigned int NUM_PARTICLES_Y = 60;
+const unsigned int NUM_PARTICLES_Z = 60;
 const unsigned int TOTAL_PARTICLES = NUM_PARTICLES_X * NUM_PARTICLES_Y * NUM_PARTICLES_Z;
 
-// --- Global Variables ---
+// Global Variables
 unsigned int particlePosSSBO = 0;
 unsigned int particleVelSSBO = 0;
 unsigned int particleVAO = 0;
@@ -42,7 +40,7 @@ unsigned int particleVAO = 0;
 unsigned int flourHeightTex = 0;
 
 // Camera
-Camera camera(glm::vec3(0.0f, 5.0f, 50.0f), glm::vec3(0.0f, 1.0f, 0.0f), 90.0f, 0.0f);
+Camera camera(glm::vec3(0.0f, 10.0f, 50.0f), glm::vec3(0.0f, 1.0f, 0.0f), -90.0f, 0.0f);
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -51,26 +49,24 @@ bool firstMouse = true;
 float deltaTime = 0.0f;
 float lastFrame = 0.0f;
 
-// --- NEW: Fixed Time Step ---
 const float PHYSICS_TIME_STEP = 0.005f; 
 float physicsAccumulator = 0.0f;
-// ---
+
 
 //Spawn Point
 glm::vec3 g_SpawnCenter(0.0f, 14.5f, 0.0f);
-const float SPAWN_RANGE_XZ = 5.0f;
+const float SPAWN_RANGE_XZ = 4.5f;
 const float FLOOR_Y =-4.0f; 
 
+//HEIGHTMAP - higher values = finer pixels
+const int HM_WIDTH = 2000;
+const int HM_HEIGHT = 2000;
 
-//HEIGHTMAP CONSTRAINTS
-const int HM_WIDTH = 700;
-const int HM_HEIGHT = 700;
-
-// base plane for flour/table
+// base plane for table
 const float TABLE_Y = -2.3f;
 
-const float TABLE_SIZE_X = 30.0f; // covers [-15, 15] in X
-const float TABLE_SIZE_Z = 30.0f; // covers [-15, 15] in Z
+const float TABLE_SIZE_X = 60.0f; 
+const float TABLE_SIZE_Z = 43.0f; 
 
 const float TABLE_MIN_X = -TABLE_SIZE_X * 0.5f;
 const float TABLE_MAX_X = TABLE_SIZE_X * 0.5f;
@@ -86,19 +82,24 @@ unsigned int flourIndexCount = 0;
 const int FLOUR_GRID_W = HM_WIDTH;
 const int FLOUR_GRID_H = HM_HEIGHT;
 
-const float flourUnitHeight = 0.00005f;
+const float flourUnitHeight = 0.008f;
 
 //SIFT CONSTANTS
-glm::vec3 g_SifterCenter(0.0f, FLOOR_Y + 15.0f, 0.0f);
+glm::vec3 g_SifterBaseCenter(0.0f, FLOOR_Y + 15.0f, 0.0f);
+
+// animated position (base + oscillation)
+glm::vec3 g_SifterCenter = g_SifterBaseCenter;
+glm::vec3 g_SifterCenterPrev;
+
 const float SIFTER_SCALE = 4.0f;
 
 glm::vec3 kitchenCenter(0.0f, -40.0f, -20.0f);
 
 //side-to-side animation parameters
-const float SIFTER_AMPLITUDE = 3.0f;   // how far left/right it moves
-const float SIFTER_SPEED = 15.0f;   // oscillation speed
+const float SIFTER_AMPLITUDE = 1.3;   // how far left/right it moves
+const float SIFTER_SPEED = 30.0f;   // oscillation speed
 
-const float SIFTER_JITTER_AMPLITUDE = 0.5f; // how much it wiggles sideways
+const float SIFTER_JITTER_AMPLITUDE = 0.3f; // how much it wiggles sideways
 
 glm::vec2 g_SifterDirXZ(1.0f, 0.5f);   
 glm::vec2 g_SifterDirPerpXZ;
@@ -107,7 +108,7 @@ struct SifterBounds
 {
 	glm::vec3 centerModel;  // center of bounding box in model space
 	float     radiusXZ;     // radius in XZ (for the circular bound)
-	float     minY;         // vertical extents if you ever need them
+	float     minY;         // vertical extents
 	float     maxY;
 };
 
@@ -161,7 +162,7 @@ SifterBounds ComputeSifterBounds(const Model& model)
 
 	glm::vec3 center = 0.5f * (minB + maxB);
 
-	// 2) Radius in XZ from this center (tightest circle including side walls)
+	// Radius in XZ from this center
 	float radiusXZ = 0.0f;
 	for (const Mesh& mesh : model.meshes)
 	{
@@ -197,9 +198,9 @@ void setupFlourMesh()
 	std::vector<unsigned int> indices;
 	indices.reserve((FLOUR_GRID_W - 1) * (FLOUR_GRID_H - 1) * 6);
 
-	// Build vertices
-	for (int j = 0; j < FLOUR_GRID_H; ++j)
-	{
+	//vertices
+	for (int j = 0; j < FLOUR_GRID_H; ++j){
+
 		float v = (FLOUR_GRID_H > 1) ? float(j) / float(FLOUR_GRID_H - 1) : 0.0f;
 		float z = TABLE_MIN_Z + v * (TABLE_MAX_Z - TABLE_MIN_Z);
 
@@ -213,13 +214,14 @@ void setupFlourMesh()
 			vert.uv = glm::vec2(u, v);
 			vertices.push_back(vert);
 		}
+
 	}
 
-	// Build indices (two triangles per quad)
-	for (int j = 0; j < FLOUR_GRID_H - 1; ++j)
-	{
-		for (int i = 0; i < FLOUR_GRID_W - 1; ++i)
-		{
+	//indices
+	for (int j = 0; j < FLOUR_GRID_H - 1; ++j) {
+
+		for (int i = 0; i < FLOUR_GRID_W - 1; ++i){
+
 			int row1 = j * FLOUR_GRID_W;
 			int row2 = (j + 1) * FLOUR_GRID_W;
 
@@ -228,12 +230,12 @@ void setupFlourMesh()
 			unsigned int i2 = row2 + i;
 			unsigned int i3 = row2 + i + 1;
 
-			// Triangle 1: i0, i2, i1
+			// Triangle 1
 			indices.push_back(i0);
 			indices.push_back(i2);
 			indices.push_back(i1);
 
-			// Triangle 2: i1, i2, i3
+			// Triangle 2
 			indices.push_back(i1);
 			indices.push_back(i2);
 			indices.push_back(i3);
@@ -242,7 +244,6 @@ void setupFlourMesh()
 
 	flourIndexCount = static_cast<unsigned int>(indices.size());
 
-	// Upload to GPU
 	glGenVertexArrays(1, &flourVAO);
 	glGenBuffers(1, &flourVBO);
 	glGenBuffers(1, &flourEBO);
@@ -250,30 +251,21 @@ void setupFlourMesh()
 	glBindVertexArray(flourVAO);
 
 	glBindBuffer(GL_ARRAY_BUFFER, flourVBO);
-	glBufferData(GL_ARRAY_BUFFER,
-		vertices.size() * sizeof(FlourVertex),
-		vertices.data(),
-		GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(FlourVertex), vertices.data(), GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, flourEBO);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-		indices.size() * sizeof(unsigned int),
-		indices.data(),
-		GL_STATIC_DRAW);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(unsigned int), indices.data(), GL_STATIC_DRAW);
 
 	// layout(location=0): vec2 xz
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE,
-		sizeof(FlourVertex),
-		(void*)offsetof(FlourVertex, xz));
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(FlourVertex), (void*)offsetof(FlourVertex, xz));
 
 	// layout(location=1): vec2 uv
 	glEnableVertexAttribArray(1);
-	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE,
-		sizeof(FlourVertex),
-		(void*)offsetof(FlourVertex, uv));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(FlourVertex), (void*)offsetof(FlourVertex, uv));
 
 	glBindVertexArray(0);
+
 }
 
 
@@ -282,7 +274,6 @@ void setupParticleBuffers()
 {
 	std::default_random_engine generator;
 	std::uniform_real_distribution<float> rand_vel(-8.0f, 0.0f);
-
 	std::uniform_real_distribution<float> rand01(0.0f, 1.0f);
 
 	std::vector<glm::vec4> positions(TOTAL_PARTICLES);
@@ -316,7 +307,7 @@ void setupParticleBuffers()
 
 	size_t bufferSize = positions.size() * sizeof(glm::vec4);
 
-	// Create SSBOs
+	// SSBOs
 	glGenBuffers(1, &particlePosSSBO);
 	glBindBuffer(GL_SHADER_STORAGE_BUFFER, particlePosSSBO);
 	glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, positions.data(), GL_DYNAMIC_DRAW);
@@ -327,7 +318,8 @@ void setupParticleBuffers()
 	glBufferData(GL_SHADER_STORAGE_BUFFER, bufferSize, velocities.data(), GL_DYNAMIC_COPY);
 	glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, particleVelSSBO);
 
-	// Setup VAO for Rendering
+
+	//VAO
 	glGenVertexArrays(1, &particleVAO);
 	glBindVertexArray(particleVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, particlePosSSBO);
@@ -364,14 +356,12 @@ int main(int argc, char* argv[])
 	glfwMakeContextCurrent(window);
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
-	//input callbacks
+
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
-
-	// Tell GLFW to capture our mouse
 	glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 
-	glfwSwapInterval(0); // VSync Off
+	glfwSwapInterval(0); 
 
 	// glad: load all OpenGL function pointers
 	// ---------------------------------------
@@ -385,12 +375,8 @@ int main(int argc, char* argv[])
 
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LEQUAL);
-	glClearColor(0.0f, 0.0f, 0.0f, 1.0f); // Black background
+	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
-
-
-	// (Query limitations omitted...)
-	std::cout << "OpenGL Limitations: " << "..." << std::endl;
 
 	// build and compile shaders
 	// -------------------------
@@ -399,17 +385,6 @@ int main(int argc, char* argv[])
 	ComputeShader computeShader("particles.cs");
 	Shader modelShader("model_loading.vs", "model_loading.fs");
 	Shader flourShader("flour.vs", "flour.fs");
-	Shader skyboxShader("skybox.vs", "skybox.fs");
-	std::vector<std::string> faces = {
-		"Textures/skybox/sunset/px.jpg",
-		"Textures/skybox/sunset/nx.jpg",
-		"Textures/skybox/sunset/py.jpg",
-		"Textures/skybox/sunset/ny.jpg",
-		"Textures/skybox/sunset/pz.jpg",
-		"Textures/skybox/sunset/nz.jpg"
-	};
-
-	Skybox skybox(faces, skyboxShader.getID());
 
 	Model tableModel("Objects/table/table.obj");
 	Model sieveModel("Objects/sieve/sieve.obj");
@@ -423,6 +398,21 @@ int main(int argc, char* argv[])
 	setupParticleBuffers();
 	setupFlourHeightmap();
 	setupFlourMesh();
+
+
+	// uniforms for heightmap
+	computeShader.use();
+	computeShader.setFloat("tableMinX", TABLE_MIN_X);
+	computeShader.setFloat("tableMaxX", TABLE_MAX_X);
+	computeShader.setFloat("tableMinZ", TABLE_MIN_Z);
+	computeShader.setFloat("tableMaxZ", TABLE_MAX_Z);
+	computeShader.setFloat("tableY", TABLE_Y);
+	computeShader.setInt("hmWidth", HM_WIDTH);
+	computeShader.setInt("hmHeight", HM_HEIGHT);
+	computeShader.setFloat("flourUnitHeight", flourUnitHeight);
+
+	computeShader.setFloat("sifterCellSize", 0.12f);     
+	computeShader.setFloat("sifterBarThickness", 0.1f); 
 
 	// render loop
 	// -----------
@@ -446,26 +436,29 @@ int main(int argc, char* argv[])
 
 
 		// --- Sifter motion (shake in XZ) ---
-		float tMain = std::sin(currentFrame * SIFTER_SPEED + 1.0f); // [-1, 1]
+		float tMain = std::sin(currentFrame * SIFTER_SPEED + 1.0f); 
 		glm::vec2 offsetMain = g_SifterDirXZ * (SIFTER_AMPLITUDE * tMain);
 
 		// small perpendicular wobble to avoid a perfect straight line
-		float tJitter = std::sin(currentFrame * SIFTER_SPEED * 1.7f + 1.0f); // different phase/freq
+		float tJitter = std::sin(currentFrame * SIFTER_SPEED * 1.7f + 1.0f); 
 		glm::vec2 offsetJitter = g_SifterDirPerpXZ * (SIFTER_JITTER_AMPLITUDE * tJitter);
 
 		// total horizontal offset from center
 		glm::vec2 offsetXZ = offsetMain + offsetJitter;
 
-		// apply to sifter center (Y stays fixed)
-		g_SifterCenter.x = offsetXZ.x;
-		g_SifterCenter.z = offsetXZ.y;
+		g_SifterCenterPrev = g_SifterCenter;
 
-		//// --- Make emitter follow the *bottom* of the sieve ---
-		//// Same bottom we use for sifter collisions
+		// apply to sifter center
+		g_SifterCenter.x = g_SifterBaseCenter.x + offsetXZ.x;
+		g_SifterCenter.z = g_SifterBaseCenter.z + offsetXZ.y;
+		g_SifterCenter.y = g_SifterBaseCenter.y;
+
+		// Make emitter follow the bottom of the sieve
+
 		glm::vec3 sifterCenterWorld = g_SifterCenter + g_SifterBoundsModel.centerModel * SIFTER_SCALE;
 		float sifterBottomY = g_SifterCenter.y + g_SifterBoundsModel.minY * SIFTER_SCALE;
 
-		// Put spawn disk just above the grid plane so flour appears to emerge from the mesh
+		// Put spawn point little above the grid plane
 		g_SpawnCenter.x = sifterCenterWorld.x;
 		g_SpawnCenter.z = sifterCenterWorld.z;
 		g_SpawnCenter.y = sifterBottomY + 3.0f;  
@@ -480,25 +473,14 @@ int main(int argc, char* argv[])
 			computeShader.setVec3("spawnCenter", g_SpawnCenter);
 			computeShader.setFloat("spawnRangeXZ", SPAWN_RANGE_XZ);
 
-			// uniforms for heightmap
-			computeShader.setFloat("tableMinX", TABLE_MIN_X);
-			computeShader.setFloat("tableMaxX", TABLE_MAX_X);
-			computeShader.setFloat("tableMinZ", TABLE_MIN_Z);
-			computeShader.setFloat("tableMaxZ", TABLE_MAX_Z);
-			computeShader.setFloat("tableY", TABLE_Y);
-			computeShader.setInt("hmWidth", HM_WIDTH);
-			computeShader.setInt("hmHeight", HM_HEIGHT);
-
-			computeShader.setFloat("flourUnitHeight", flourUnitHeight);
-
 			glBindImageTexture(
-				0,                    // image unit
+				0,                    
 				flourHeightTex,
 				0,
 				GL_FALSE,
 				0,
 				GL_READ_WRITE,
-				GL_R32UI              // must match internal format
+				GL_R32UI              
 			);
 
 
@@ -510,17 +492,17 @@ int main(int argc, char* argv[])
 			// bottom of the sieve (minY) in world space
 			float sifterBottomY = g_SifterCenter.y + g_SifterBoundsModel.minY * SIFTER_SCALE;
 
+			computeShader.setVec3("sifterCenterPrev", g_SifterCenterPrev);
 			computeShader.setVec3("sifterCenter", sifterCenterWorld);
 			computeShader.setFloat("sifterRadius", sifterRadiusWorld);
 			computeShader.setFloat("sifterY", sifterBottomY);
 
-			computeShader.setFloat("sifterCellSize", 0.12f);      // spacing
-			computeShader.setFloat("sifterBarThickness", 0.1f); // thickness
 
 			glDispatchCompute(TOTAL_PARTICLES, 1, 1);
 			glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 
 			physicsAccumulator -= PHYSICS_TIME_STEP;
+
 		}
 
 
@@ -531,6 +513,7 @@ int main(int argc, char* argv[])
 		glm::mat4 projection = glm::perspective(glm::radians(camera.Zoom), (float)SCR_WIDTH / (float)SCR_HEIGHT, 0.1f, 200.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 
+
 		modelShader.use();
 		modelShader.setMat4("projection", projection);
 		modelShader.setMat4("view", view);
@@ -538,7 +521,7 @@ int main(int argc, char* argv[])
 
 		//DRAW TABLE
 		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, glm::vec3(0.0f, FLOOR_Y - 2.5f, 0.0f));
+		model = glm::translate(model, glm::vec3(2.0f, FLOOR_Y - 2.5f, 0.0f));
 		model = glm::scale(model, glm::vec3(1.0f));
 		modelShader.setMat4("model", model);
 		tableModel.Draw(modelShader);
@@ -558,9 +541,6 @@ int main(int argc, char* argv[])
 		modelShader.setMat4("model", modelSieve);
 		sieveModel.Draw(modelShader);
 
-		//DRAW SKYBOX
-		skybox.draw(view, projection);
-
 
 		//DRAW FLOUR HEIGHTMAP
 		flourShader.use();
@@ -571,7 +551,6 @@ int main(int argc, char* argv[])
 		flourShader.setMat4("model", flourModelMat);
 
 		flourShader.setFloat("tableY", TABLE_Y);
-		flourShader.setFloat("flourUnitHeight", flourUnitHeight);
 		flourShader.setInt("hmWidth", HM_WIDTH);
 		flourShader.setInt("hmHeight", HM_HEIGHT);
 
@@ -627,8 +606,7 @@ int main(int argc, char* argv[])
 	return EXIT_SUCCESS;
 }
 
-// (processInput, mouse_callback, etc. are all unchanged)
-// ...
+
 void processInput(GLFWwindow* window)
 {
 	if (glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
@@ -636,7 +614,6 @@ void processInput(GLFWwindow* window)
 
 	float cameraSpeed = 10.0f * deltaTime;
 
-	// Pass deltaTime to camera processor
 	if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
 		camera.ProcessKeyboard(FORWARD, cameraSpeed);
 	if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
@@ -646,19 +623,21 @@ void processInput(GLFWwindow* window)
 	if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
 		camera.ProcessKeyboard(RIGHT, cameraSpeed);
 
-	// --- Spawn Point Movement (Arrow Keys) ---
-	float spawnMoveSpeed = 10.0f * deltaTime; // Speed of the spawn point
+	// Spawn point movement with arrow keys
+	float spawnMoveSpeed = 10.0f * deltaTime; 
+
 	if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
-		g_SpawnCenter.z -= spawnMoveSpeed; // Move "forward" in the world
+		g_SifterBaseCenter.z -= spawnMoveSpeed; 
 	if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
-		g_SpawnCenter.z += spawnMoveSpeed; // Move "backward"
+		g_SifterBaseCenter.z += spawnMoveSpeed; 
 	if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
-		g_SpawnCenter.x -= spawnMoveSpeed;
+		g_SifterBaseCenter.x -= spawnMoveSpeed;
 	if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
-		g_SpawnCenter.x += spawnMoveSpeed;
+		g_SifterBaseCenter.x += spawnMoveSpeed;
+
 }
 
-// glfw: whenever the mouse moves
+
 void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 {
 	float xpos = static_cast<float>(xposIn);
@@ -672,7 +651,7 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn)
 	}
 
 	float xoffset = xpos - lastX;
-	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
+	float yoffset = lastY - ypos; 
 
 	lastX = xpos;
 	lastY = ypos;

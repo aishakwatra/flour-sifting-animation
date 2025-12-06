@@ -131,7 +131,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="AnimationProject.cpp" />
-    <ClCompile Include="Skybox.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="camera.h" />
@@ -139,18 +138,15 @@
     <ClInclude Include="model.h" />
     <ClInclude Include="shader_c.h" />
     <ClInclude Include="shader_m.h" />
-    <ClInclude Include="Skybox.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="flour.fs" />
     <None Include="flour.vs" />
-    <None Include="flour_relax.cs" />
     <None Include="model_loading.fs" />
     <None Include="model_loading.vs" />
     <None Include="particles.cs" />
     <None Include="particle_render.fs" />
     <None Include="particle_render.vs" />
-    <None Include="skybox.fs" />
     <None Include="skybox.vs" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -2,16 +2,16 @@
 
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-// --- Physics Constants ---
+// Physics Constants
 const vec3 GRAVITY = vec3(0.0, -9.8, 0.0);
 const float PARTICLE_INV_MASS = 1.0 / 0.1;
 const float DELTA_T = 0.005;
 
-// --- Spawn variables from C++ ---
+// Spawn variables from main 
 uniform vec3 spawnCenter;
 uniform float spawnRangeXZ;
 
-// --- Table / heightmap info from C++ ---
+// Table / heightmap info main 
 uniform float tableMinX;
 uniform float tableMaxX;
 uniform float tableMinZ;
@@ -22,6 +22,8 @@ uniform int hmHeight;
 uniform float flourUnitHeight;
 
 uniform vec3  sifterCenter;
+uniform vec3 sifterCenterPrev;
+
 uniform float sifterRadius;
 uniform float sifterY;
 
@@ -31,7 +33,7 @@ uniform float sifterBarThickness;  // thickness of the bars
 const float TABLE_Y = -2.3;
 const float KILL_Y = TABLE_Y - 2.0;
 
-// --- Flour heightmap (integer image, for atomicAdd) ---
+// --- Flour heightmap (integer image) ---
 layout(r32ui, binding = 0) uniform uimage2D flourHeightmap;
 
 // --- Buffers ---
@@ -56,7 +58,7 @@ float rand(float n)
 // Returns true if hitPosWorld is on a mesh bar (solid), false if it's a hole (flour passes through)
 bool sifterBarAt(vec3 hitPosWorld)
 {
-    // Work in sifter local XZ
+
     vec2 localXZ = hitPosWorld.xz - sifterCenter.xz;
 
     // check if within the circular sift
@@ -125,16 +127,19 @@ bool handleSifterBottomCollision(vec3 p, inout vec3 p_new, inout vec3 v_new)
     return false;
 }
 
-const float SIFTER_WALL_HEIGHT = 4.0; 
+const float SIFTER_WALL_HEIGHT = 4.0;
+
 
 bool handleSifterSideCollision(vec3 p, inout vec3 p_new, inout vec3 v_new)
 {
     float yMin = sifterY;
     float yMax = sifterY + SIFTER_WALL_HEIGHT;
 
+    //we’re completely below or above the cylindrical wall
     if ((p.y < yMin && p_new.y < yMin) || (p.y > yMax && p_new.y > yMax))
         return false;
 
+    // distance from sifter center in XZ plane
     vec2 d_old = p.xz - sifterCenter.xz;
     vec2 d_new = p_new.xz - sifterCenter.xz;
 
@@ -144,36 +149,40 @@ bool handleSifterSideCollision(vec3 p, inout vec3 p_new, inout vec3 v_new)
     bool wasInside = (r_old <= sifterRadius);
     bool isOutside = (r_new > sifterRadius);
 
+    //transitions from inside -> outside
     if (wasInside && isOutside)
     {
+        // Snap the position back onto the cylinder surface
         if (r_new > 0.0)
         {
-            vec2 dir = normalize(d_new);
+            vec2 dir = normalize(d_new); 
             p_new.xz = sifterCenter.xz + dir * (sifterRadius - 0.001);
         }
 
+        // outward normal on the cylinder wall
         vec3 n;
         if (r_new > 0.0)
         {
             vec2 dir = normalize(d_new);
-            n = normalize(vec3(dir.x, 0.0, dir.y));
+            n = normalize(vec3(dir.x, 0.0, dir.y)); 
         }
         else
         {
-            n = vec3(1.0, 0.0, 0.0);
+            n = vec3(1.0, 0.0, 0.0); // fallback
         }
 
-        float vn = dot(v_new, n);
-        vec3 vt = v_new - vn * n;
+        // decompose velocity into normal + tangential components
+        float vn = dot(v_new, n);      
+        vec3 vt = v_new - vn * n;       
 
+        // If the particle is moving outward (same direction as n), reflect it
         if (vn > 0.0)
         {
             float restitution = 0.3;
             float friction = 0.2;
 
-            vec3 v_reflected = -restitution * vn * n + (1.0 - friction) * vt;
+            vec3 v_reflected = -restitution * vn * n +   (1.0 - friction) * vt;   
             v_new = v_reflected;
-
         }
 
         return true;
@@ -181,6 +190,7 @@ bool handleSifterSideCollision(vec3 p, inout vec3 p_new, inout vec3 v_new)
 
     return false;
 }
+
 
 
 
@@ -192,7 +202,6 @@ bool projectToHeightmap(vec3 p, out ivec2 cell)
     float x = p.x;
     float z = p.z;
 
-    // Check if horizontally above the table
     if (x < tableMinX || x > tableMaxX ||
         z < tableMinZ || z > tableMaxZ)
     {
@@ -237,8 +246,8 @@ void respawnParticle(uint idx)
     // --- horizontal spray ---
     float u2 = rand(fi * 1.23);
     float v2 = rand(fi * 1.57);
-    float hAngle = 6.2831853 * u2;        // random horizontal direction
-    float hSpeed = 2.0 * v2;              // tweak 2.0 = how strong the spray is
+    float hAngle = 6.2831853 * u2;       
+    float hSpeed = 2.0 * v2;              
 
     float vx = cos(hAngle) * hSpeed;
     float vz = sin(hAngle) * hSpeed;
@@ -267,14 +276,15 @@ void main()
         return;
     }
 
-    // Sifter bottom (mesh with holes)
+    // Sifter bottom
     handleSifterBottomCollision(p, p_new, v_new);
 
-    // Sifter side walls (cylindrical shell)
+    // Sifter side walls
     handleSifterSideCollision(p, p_new, v_new);
 
     // Table / flour heightmap
     ivec2 cell;
+
     if (projectToHeightmap(p_new, cell))
     {
         uint h = imageLoad(flourHeightmap, cell).r;
